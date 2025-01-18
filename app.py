@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify, render_template_string
 app = Flask(__name__)
 
 # Set the OpenAI API key using environment variables directly
-os.environ['OPENAI_API_KEY'] = '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'
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Configure OpenAI with the API key
 openai.api_key = os.getenv('OPENAI_API_KEY')
