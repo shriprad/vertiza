@@ -6,8 +6,10 @@ import openai
 # Initialize Flask app
 app = Flask(__name__)
 
-# Configure OpenAI API key
-os.environ['OPENAI_API_KEY'] = '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'
+# Configure Gemini AI
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
+genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+
 # HTML Template for File Upload
 HTML_TEMPLATE = """
 <!DOCTYPE html>
