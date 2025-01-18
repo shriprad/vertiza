@@ -87,7 +87,7 @@ def analyze():
         # Convert data to string for AI input
         data_str = json.dumps(data, indent=2)
 
-        # Prompt for GPT-4 (OpenAI) analysis
+        # Prompt for GPT-3.5-turbo (OpenAI) analysis
         prompt = f"""
         The following is JSON data from an e-commerce store describing user behaviors. Analyze the data for user behavior patterns, funnel conversion rates, and potential AI chatbot interventions.
 
@@ -96,9 +96,9 @@ def analyze():
         Provide insights in a concise format:
         """
 
-        # Query OpenAI GPT-4 API
+        # Query OpenAI GPT-3.5-turbo API
         response = openai.Completion.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             prompt=prompt,
             max_tokens=500
         )
