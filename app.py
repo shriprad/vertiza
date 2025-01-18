@@ -1,16 +1,16 @@
 import os
 import json
-import openai
+import google.generativeai as genai
 from flask import Flask, request, jsonify, render_template_string
 
 # Initialize Flask app
 app = Flask(__name__)
 
-# Set the API key using environment variables directly
-os.environ['OPENAI_API_KEY'] = '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'
+# Set the API key using environment variables directly for Gemini AI
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
 
-# Ensure that openai.api_key is assigned from environment variable
-openai.api_key = os.getenv('OPENAI_API_KEY')
+# Configure Gemini AI with the API key
+genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 # HTML Template for File Upload
 HTML_TEMPLATE = """
@@ -84,10 +84,10 @@ def analyze():
         # Parse JSON file
         data = json.load(file)
         
-        # Convert data to string for GPT input
+        # Convert data to string for AI input
         data_str = json.dumps(data, indent=2)
 
-        # Prompt for ChatGPT
+        # Prompt for Gemini AI
         prompt = f"""
         The following is JSON data from an e-commerce store describing user behaviors. Analyze the data for user behavior patterns, funnel conversion rates, and potential AI chatbot interventions.
         
@@ -96,17 +96,11 @@ def analyze():
         Provide insights in a concise format:
         """
 
-        # Query ChatGPT
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a data analyst."},
-                {"role": "user", "content": prompt}
-            ]
-        )
+        # Query Gemini AI (Change from OpenAI to Gemini)
+        response = genai.generate_text(prompt=prompt)
 
-        # Extract GPT response
-        analysis = response['choices'][0]['message']['content']
+        # Extract Gemini AI response
+        analysis = response['text']
         
         return jsonify({"analysis": analysis, "message": "Upload Complete!"})
 
