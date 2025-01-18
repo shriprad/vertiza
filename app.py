@@ -1,13 +1,16 @@
 import os
 import json
-import google.generativeai as genai
-from flask import Flask, request, jsonify, render_template_string
 import openai
+from flask import Flask, request, jsonify, render_template_string
 
 # Initialize Flask app
 app = Flask(__name__)
 
+# Set the API key using environment variables directly
 os.environ['OPENAI_API_KEY'] = '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'
+
+# Ensure that openai.api_key is assigned from environment variable
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # HTML Template for File Upload
 HTML_TEMPLATE = """
@@ -17,6 +20,39 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload and Analyze JSON</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            margin-top: 50px;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        h1 {
+            color: #333;
+        }
+    </style>
 </head>
 <body>
     <h1>Upload JSON File for Analysis</h1>
@@ -72,7 +108,7 @@ def analyze():
         # Extract GPT response
         analysis = response['choices'][0]['message']['content']
         
-        return jsonify({"analysis": analysis})
+        return jsonify({"analysis": analysis, "message": "Upload Complete!"})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
