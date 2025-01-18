@@ -7,7 +7,7 @@ import openai
 app = Flask(__name__)
 
 # Configure OpenAI API key
-openai.api_key = os.getenv("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")
+openai.api_key = os.getenv<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>
 
 # HTML Template for File Upload
 HTML_TEMPLATE = """
