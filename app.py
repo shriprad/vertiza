@@ -1,16 +1,16 @@
 import os
 import json
-import google.generativeai as genai
+import openai
 from flask import Flask, request, jsonify, render_template_string
 
 # Initialize Flask app
 app = Flask(__name__)
 
-# Set the API key using environment variables directly for Gemini AI
-os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
+# Set the OpenAI API key using environment variables directly
+os.environ['OPENAI_API_KEY'] = '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'
 
-# Configure Gemini AI with the API key
-genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+# Configure OpenAI with the API key
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # HTML Template for File Upload
 HTML_TEMPLATE = """
@@ -87,20 +87,24 @@ def analyze():
         # Convert data to string for AI input
         data_str = json.dumps(data, indent=2)
 
-        # Prompt for Gemini AI
+        # Prompt for GPT-4 (OpenAI) analysis
         prompt = f"""
         The following is JSON data from an e-commerce store describing user behaviors. Analyze the data for user behavior patterns, funnel conversion rates, and potential AI chatbot interventions.
-        
+
         {data_str}
-        
+
         Provide insights in a concise format:
         """
 
-        # Query Gemini AI (Change from OpenAI to Gemini)
-        response = genai.generate_text(prompt=prompt)
+        # Query OpenAI GPT-4 API
+        response = openai.Completion.create(
+            model="gpt-4",
+            prompt=prompt,
+            max_tokens=500
+        )
 
-        # Extract Gemini AI response
-        analysis = response['text']
+        # Extract GPT response
+        analysis = response.choices[0].text.strip()
         
         return jsonify({"analysis": analysis, "message": "Upload Complete!"})
 
