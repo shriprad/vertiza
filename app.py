@@ -23,7 +23,7 @@ HTML_TEMPLATE = '''
 <body class="bg-gray-100 p-8">
     <div class="max-w-4xl mx-auto">
         <h1 class="text-3xl font-bold mb-8">E-commerce Behavior Analysis</h1>
-        
+       
         <div class="bg-white p-6 rounded-lg shadow-md mb-8">
             <h2 class="text-xl font-semibold mb-4">Upload JSON Data</h2>
             <textarea id="jsonInput" class="w-full h-48 p-4 border rounded-md mb-4" placeholder="Paste your JSON data here..."></textarea>
@@ -32,7 +32,7 @@ HTML_TEMPLATE = '''
 
         <div id="results" class="bg-white p-6 rounded-lg shadow-md hidden">
             <h2 class="text-xl font-semibold mb-4">Analysis Results</h2>
-            
+           
             <div class="grid grid-cols-3 gap-4 mb-6">
                 <div class="bg-gray-50 p-4 rounded-md">
                     <h3 class="font-medium text-gray-700">Total Views</h3>
@@ -60,7 +60,7 @@ HTML_TEMPLATE = '''
             const jsonInput = document.getElementById('jsonInput').value;
             try {
                 const data = JSON.parse(jsonInput);
-                
+               
                 const response = await fetch('/analyze', {
                     method: 'POST',
                     headers: {
@@ -68,14 +68,14 @@ HTML_TEMPLATE = '''
                     },
                     body: JSON.stringify(data)
                 });
-                
+               
                 const result = await response.json();
-                
+               
                 if (result.error) {
                     alert('Error: ' + result.error);
                     return;
                 }
-                
+               
                 document.getElementById('results').classList.remove('hidden');
                 document.getElementById('totalViews').textContent = result.metrics.total_views;
                 document.getElementById('uniqueCustomers').textContent = result.metrics.unique_customers;
@@ -91,18 +91,36 @@ HTML_TEMPLATE = '''
 '''
 
 def analyze_user_behavior(data):
-    # Prepare prompt for Gemini AI
+    # Updated comprehensive analysis prompt
     analysis_prompt = f"""
-    Analyze this e-commerce user behavior data and provide insights on:
-    1. User behavior patterns
-    2. Funnel conversion rates
-    3. Potential chatbot intervention points
-    
+    Please provide a comprehensive product analysis keeping the objectives in context:
+    1. Value analysis:
+    - Assess how Verifast (via the chatbot) adds value to the website.
+    - Identify conversion patterns related to chatbot interactions.
+
+    2. Cohort Analysis:
+    - Identify cohorts based on behavior (e.g., utm_source, returning visitors, or actions like adding/removing products from the cart).
+    - Highlight how these cohorts interact with Verifast and their conversion rates.
+   
+    3. Proactive Engagement:
+    - Determine which cohorts could benefit from proactive AI engagement (e.g., returning visitors or users who abandon carts).
+    - Explore patterns indicating when AI intervention improves conversion rates.
+
+    4. Experiment Design:
+    - Propose an experiment to test proactive AI engagement.
+    - Define metrics to measure success or failure.
+   
+    5. Additional Insights:
+    - Suggest other data points to capture during user interaction for better intervention opportunities.
+    - Recommend ways the AI can engage beyond sending nudges (e.g., personalized suggestions, interactive tutorials).
+
+    6. Measurement of Success:
+    - Define key performance indicators (KPIs) for AI interventions and UX improvements.
+    Format the response clearly with section headers and bullet points.
+
     Data: {json.dumps(data, indent=2)}
-    
-    Please provide a structured analysis with specific recommendations.
     """
-    
+   
     try:
         response = model.generate_content(analysis_prompt)
         return response.text
@@ -116,7 +134,7 @@ def process_timestamps(data):
         "unique_customers": set(),
         "products_viewed": set()
     }
-    
+   
     for event in data:
         if event["event"] == "product_viewed":
             metrics["total_views"] += 1
@@ -124,7 +142,7 @@ def process_timestamps(data):
             metrics["products_viewed"].add(
                 event["properties"]["payload"]["data"]["productVariant"]["product"]["title"]
             )
-    
+   
     return {
         "total_views": metrics["total_views"],
         "unique_customers": len(metrics["unique_customers"]),
@@ -141,13 +159,13 @@ def analyze():
         data = request.json
         if not data:
             return jsonify({"error": "No data provided"}), 400
-        
+       
         # Get basic metrics
         metrics = process_timestamps(data)
-        
+       
         # Get AI analysis
         ai_analysis = analyze_user_behavior(data)
-        
+       
         return jsonify({
             "metrics": metrics,
             "ai_analysis": ai_analysis
