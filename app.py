@@ -1,14 +1,111 @@
-import openai
 import os
+import json
+import google.generativeai as genai
+from flask import Flask, request, jsonify, render_template_string
 
-openai.api_key = os.getenv('OPENAI_API_KEY')
+# Initialize Flask app
+app = Flask(__name__)
 
-try:
-    response = openai.Completion.create(
-        model="gpt-3.5-turbo",
-        prompt="Hello, world!",
-        max_tokens=10
-    )
-    print("Response:", response)
-except Exception as e:
-    print("Error:", e)
+# Set the API key using environment variables directly for Gemini AI
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
+
+# Configure Gemini AI with the API key
+genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+
+# HTML Template for File Upload
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload and Analyze JSON</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            margin-top: 50px;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        h1 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload JSON File for Analysis</h1>
+    <form action="/analyze" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".json" required>
+        <button type="submit">Upload and Analyze</button>
+    </form>
+</body>
+</html>
+"""
+
+# Home route with upload form
+@app.route('/')
+def home():
+    return render_template_string(HTML_TEMPLATE)
+
+# Route to handle file upload and analysis
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file uploaded."}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({"error": "No selected file."}), 400
+
+    try:
+        # Parse JSON file
+        data = json.load(file)
+        
+        # Convert data to string for AI input
+        data_str = json.dumps(data, indent=2)
+
+        # Prompt for Gemini AI
+        prompt = f"""
+        The following is JSON data from an e-commerce store describing user behaviors. Analyze the data for user behavior patterns, funnel conversion rates, and potential AI chatbot interventions.
+        
+        {data_str}
+        
+        Provide insights in a concise format:
+        """
+
+        # Query Gemini AI (Change from OpenAI to Gemini)
+        response = genai.generate_text(prompt=prompt)
+
+        # Extract Gemini AI response
+        analysis = response['text']
+        
+        return jsonify({"analysis": analysis, "message": "Upload Complete!"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 10000)))
