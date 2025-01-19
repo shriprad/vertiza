@@ -7,14 +7,13 @@ from flask import Flask, request, jsonify, render_template_string
 app = Flask(__name__)
 
 # Set the API key using environment variables directly for Gemini AI
-os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw")
 
 # Configure Gemini AI with the API key
 try:
-    api_key = os.getenv('GOOGLE_API_KEY')
-    if not api_key:
-        raise ValueError("API key is not set. Please configure the 'GOOGLE_API_KEY' environment variable.")
-    genai.configure(api_key=api_key)
+    if not GOOGLE_API_KEY:
+        raise ValueError("Google API Key is not set. Please configure 'GOOGLE_API_KEY'.")
+    genai.configure(api_key=GOOGLE_API_KEY)
 except Exception as e:
     raise RuntimeError(f"Failed to configure Gemini AI: {str(e)}")
 
@@ -105,15 +104,14 @@ def analyze():
         Provide insights in a concise format:
         """
 
-        # Query Gemini AI (Enhanced Error Handling)
+        # Query Gemini AI
         try:
-            response = genai.generate_text(prompt=prompt)
-            # Validate response
-            if 'text' not in response:
-                return jsonify({"error": "Invalid response format from Gemini AI"}), 500
-            analysis = response['text']
+            response = genai.generate_text(model="text-bison-001", prompt=prompt)
+            if 'candidates' not in response or len(response['candidates']) == 0:
+                raise ValueError("Invalid response format or no candidates returned.")
+            analysis = response['candidates'][0]['output']
         except Exception as e:
-            return jsonify({"error": f"Failed to generate text: {str(e)}"}), 500
+            return jsonify({"error": f"Gemini AI Error: {str(e)}"}), 500
 
         return jsonify({"analysis": analysis, "message": "Upload Complete!"})
 
@@ -123,5 +121,4 @@ def analyze():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    # Added debug mode for better error visibility
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 10000)), debug=True)
