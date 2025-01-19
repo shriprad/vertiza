@@ -7,14 +7,13 @@ from flask import Flask, request, jsonify, render_template_string
 app = Flask(__name__)
 
 # Set the API key using environment variables directly for Gemini AI
-os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "YOUR_GOOGLE_API_KEY_HERE")
 
 # Configure Gemini AI with the API key
 try:
-    api_key = os.getenv('GOOGLE_API_KEY')
-    if not api_key:
-        raise ValueError("API key is not set. Please configure 'GOOGLE_API_KEY'.")
-    genai.configure(api_key=api_key)
+    if not GOOGLE_API_KEY:
+        raise ValueError("Google API Key is not set. Please configure 'GOOGLE_API_KEY'.")
+    genai.configure(api_key=GOOGLE_API_KEY)
 except Exception as e:
     raise RuntimeError(f"Failed to configure Gemini AI: {str(e)}")
 
