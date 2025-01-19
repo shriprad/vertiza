@@ -83,9 +83,12 @@ def analyze():
     try:
         # Parse JSON file
         data = json.load(file)
-        
-        # Convert data to string for AI input
-        data_str = json.dumps(data, indent=2)
+
+        # Analyze only the first 10 entries
+        first_10_entries = data[:10]
+
+        # Convert the subset to string for AI input
+        data_str = json.dumps(first_10_entries, indent=2)
 
         # Prompt for Gemini AI
         prompt = f"""
@@ -101,7 +104,7 @@ def analyze():
 
         # Extract Gemini AI response
         analysis = response['text']
-        
+
         return jsonify({"analysis": analysis, "message": "Upload Complete!"})
 
     except Exception as e:
