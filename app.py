@@ -9,9 +9,6 @@ app = Flask(__name__)
 # Set the OpenAI API key using environment variables directly
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
-# Configure OpenAI with the API key
-openai.api_key = os.getenv('OPENAI_API_KEY')
-
 # HTML Template for File Upload
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -83,9 +80,12 @@ def analyze():
     try:
         # Parse JSON file
         data = json.load(file)
-        
-        # Convert data to string for AI input
-        data_str = json.dumps(data, indent=2)
+
+        # Analyze only the first 10 entries
+        first_10_entries = data[:10]
+
+        # Convert the subset to string for AI input
+        data_str = json.dumps(first_10_entries, indent=2)
 
         # Prompt for GPT-3.5-turbo (OpenAI) analysis
         prompt = f"""
@@ -105,7 +105,7 @@ def analyze():
 
         # Extract GPT response
         analysis = response.choices[0].text.strip()
-        
+
         return jsonify({"analysis": analysis, "message": "Upload Complete!"})
 
     except Exception as e:
