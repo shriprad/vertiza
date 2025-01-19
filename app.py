@@ -7,13 +7,14 @@ from flask import Flask, request, jsonify, render_template_string
 app = Flask(__name__)
 
 # Set the API key using environment variables directly for Gemini AI
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw")
+os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
 
 # Configure Gemini AI with the API key
 try:
-    if not GOOGLE_API_KEY:
-        raise ValueError("Google API Key is not set. Please configure 'GOOGLE_API_KEY'.")
-    genai.configure(api_key=GOOGLE_API_KEY)
+    api_key = os.getenv('GOOGLE_API_KEY')
+    if not api_key:
+        raise ValueError("API key is not set. Please configure 'GOOGLE_API_KEY'.")
+    genai.configure(api_key=api_key)
 except Exception as e:
     raise RuntimeError(f"Failed to configure Gemini AI: {str(e)}")
 
@@ -104,11 +105,11 @@ def analyze():
         Provide insights in a concise format:
         """
 
-        # Query Gemini AI
+        # Query Gemini AI with the correct model
         try:
-            response = genai.generate_text(model="text-bison-001", prompt=prompt)
-            if 'candidates' not in response or len(response['candidates']) == 0:
-                raise ValueError("Invalid response format or no candidates returned.")
+            response = genai.generate_text(model="models/text-bison-001", prompt=prompt)
+            if 'candidates' not in response or not response['candidates']:
+                raise ValueError("No candidates returned in the response.")
             analysis = response['candidates'][0]['output']
         except Exception as e:
             return jsonify({"error": f"Gemini AI Error: {str(e)}"}), 500
