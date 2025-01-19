@@ -17,14 +17,14 @@ try:
 except Exception as e:
     raise RuntimeError(f"Failed to configure Gemini AI: {str(e)}")
 
-# HTML Template for File Upload
+# HTML Template for Text Input
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload and Analyze JSON</title>
+    <title>Analyze JSON Input</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -40,7 +40,9 @@ HTML_TEMPLATE = """
             max-width: 400px;
             margin: 0 auto;
         }
-        input[type="file"] {
+        textarea {
+            width: 100%;
+            height: 200px;
             margin: 20px 0;
         }
         button {
@@ -60,34 +62,30 @@ HTML_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>Upload JSON File for Analysis</h1>
-    <form action="/analyze" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".json" required>
-        <button type="submit">Upload and Analyze</button>
+    <h1>Enter JSON Entries for Analysis</h1>
+    <form action="/analyze" method="post">
+        <textarea name="json_entries" placeholder="Paste your JSON entries here..." required></textarea>
+        <button type="submit">Analyze</button>
     </form>
 </body>
 </html>
 """
 
-# Home route with upload form
+# Home route with input text box
 @app.route('/')
 def home():
     return render_template_string(HTML_TEMPLATE)
 
-# Route to handle file upload and analysis
+# Route to handle JSON text input and analysis
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file uploaded."}), 400
+    json_text = request.form.get('json_entries')
 
-    file = request.files['file']
-
-    if file.filename == '':
-        return jsonify({"error": "No selected file."}), 400
+    if not json_text:
+        return jsonify({"error": "No JSON text provided."}), 400
 
     try:
-        # Parse JSON file
-        data = json.load(file)
+        data = json.loads(json_text)
 
         # Analyze only the first 10 entries
         first_10_entries = data[:10]
@@ -113,10 +111,10 @@ def analyze():
         except Exception as e:
             return jsonify({"error": f"Gemini AI Error: {str(e)}"}), 500
 
-        return jsonify({"analysis": analysis, "message": "Upload Complete!"})
+        return jsonify({"analysis": analysis, "message": "Analysis Complete!"})
 
     except json.JSONDecodeError:
-        return jsonify({"error": "Invalid JSON file. Please upload a valid JSON file."}), 400
+        return jsonify({"error": "Invalid JSON text. Please provide valid JSON."}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
