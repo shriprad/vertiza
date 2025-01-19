@@ -91,16 +91,34 @@ HTML_TEMPLATE = '''
 '''
 
 def analyze_user_behavior(data):
-    # Prepare prompt for Gemini AI
+    # Updated comprehensive analysis prompt
     analysis_prompt = f"""
-    Analyze this e-commerce user behavior data and provide insights on:
-    1. User behavior patterns
-    2. Funnel conversion rates
-    3. Potential chatbot intervention points
+    Please provide a comprehensive product analysis keeping the objectives in context:
+    1. Value analysis:
+    - Assess how Verifast (via the chatbot) adds value to the website.
+    - Identify conversion patterns related to chatbot interactions.
+
+    2. Cohort Analysis:
+    - Identify cohorts based on behavior (e.g., utm_source, returning visitors, or actions like adding/removing products from the cart).
+    - Highlight how these cohorts interact with Verifast and their conversion rates.
+   
+    3. Proactive Engagement:
+    - Determine which cohorts could benefit from proactive AI engagement (e.g., returning visitors or users who abandon carts).
+    - Explore patterns indicating when AI intervention improves conversion rates.
+
+    4. Experiment Design:
+    - Propose an experiment to test proactive AI engagement.
+    - Define metrics to measure success or failure.
     
+    5. Additional Insights:
+    - Suggest other data points to capture during user interaction for better intervention opportunities.
+    - Recommend ways the AI can engage beyond sending nudges (e.g., personalized suggestions, interactive tutorials).
+
+    6. Measurement of Success:
+    - Define key performance indicators (KPIs) for AI interventions and UX improvements.
+    Format the response clearly with section headers and bullet points.
+
     Data: {json.dumps(data, indent=2)}
-    
-    Please provide a structured analysis with specific recommendations.
     """
     
     try:
