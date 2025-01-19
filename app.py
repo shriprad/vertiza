@@ -1,122 +1,157 @@
 import os
-import json
+from flask import Flask, render_template_string, request, jsonify
 import google.generativeai as genai
-from flask import Flask, request, jsonify, render_template_string
+from datetime import datetime
+import json
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Load the API key from environment variables
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY:
-    raise ValueError("Google API Key is not set. Please configure 'GOOGLE_API_KEY'.")
+# Configure Gemini AI
+genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+model = genai.GenerativeModel('gemini-pro')
 
-# Configure Gemini AI with the API key
-try:
-    genai.configure(api_key=GOOGLE_API_KEY)
-except Exception as e:
-    raise RuntimeError(f"Failed to configure Gemini AI: {str(e)}")
-
-# HTML Template for Text Input
-HTML_TEMPLATE = """
+# HTML Template
+HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyze JSON Input</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            text-align: center;
-            margin-top: 50px;
-        }
-        form {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            margin: 0 auto;
-        }
-        textarea {
-            width: 100%;
-            height: 200px;
-            margin: 20px 0;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        h1 {
-            color: #333;
-        }
-    </style>
+    <title>E-commerce Behavior Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Enter JSON Entries for Analysis</h1>
-    <form action="/analyze" method="post">
-        <textarea name="json_entries" placeholder="Paste your JSON entries here..." required></textarea>
-        <button type="submit">Analyze</button>
-    </form>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">E-commerce Behavior Analysis</h1>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold mb-4">Upload JSON Data</h2>
+            <textarea id="jsonInput" class="w-full h-48 p-4 border rounded-md mb-4" placeholder="Paste your JSON data here..."></textarea>
+            <button onclick="analyzeData()" class="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600">Analyze</button>
+        </div>
+
+        <div id="results" class="bg-white p-6 rounded-lg shadow-md hidden">
+            <h2 class="text-xl font-semibold mb-4">Analysis Results</h2>
+            
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <h3 class="font-medium text-gray-700">Total Views</h3>
+                    <p id="totalViews" class="text-2xl font-bold text-blue-600">-</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <h3 class="font-medium text-gray-700">Unique Customers</h3>
+                    <p id="uniqueCustomers" class="text-2xl font-bold text-blue-600">-</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <h3 class="font-medium text-gray-700">Unique Products</h3>
+                    <p id="uniqueProducts" class="text-2xl font-bold text-blue-600">-</p>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="font-semibold mb-2">AI Analysis</h3>
+                <div id="aiAnalysis" class="bg-gray-50 p-4 rounded-md whitespace-pre-wrap"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function analyzeData() {
+            const jsonInput = document.getElementById('jsonInput').value;
+            try {
+                const data = JSON.parse(jsonInput);
+                
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    alert('Error: ' + result.error);
+                    return;
+                }
+                
+                document.getElementById('results').classList.remove('hidden');
+                document.getElementById('totalViews').textContent = result.metrics.total_views;
+                document.getElementById('uniqueCustomers').textContent = result.metrics.unique_customers;
+                document.getElementById('uniqueProducts').textContent = result.metrics.unique_products;
+                document.getElementById('aiAnalysis').textContent = result.ai_analysis;
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+    </script>
 </body>
 </html>
-"""
+'''
 
-# Home route with input text box
+def analyze_user_behavior(data):
+    # Prepare prompt for Gemini AI
+    analysis_prompt = f"""
+    Analyze this e-commerce user behavior data and provide insights on:
+    1. User behavior patterns
+    2. Funnel conversion rates
+    3. Potential chatbot intervention points
+    
+    Data: {json.dumps(data, indent=2)}
+    
+    Please provide a structured analysis with specific recommendations.
+    """
+    
+    try:
+        response = model.generate_content(analysis_prompt)
+        return response.text
+    except Exception as e:
+        return f"Error in analysis: {str(e)}"
+
+def process_timestamps(data):
+    # Convert timestamps to readable format and extract basic metrics
+    metrics = {
+        "total_views": 0,
+        "unique_customers": set(),
+        "products_viewed": set()
+    }
+    
+    for event in data:
+        if event["event"] == "product_viewed":
+            metrics["total_views"] += 1
+            metrics["unique_customers"].add(event["properties"]["customer_id"])
+            metrics["products_viewed"].add(
+                event["properties"]["payload"]["data"]["productVariant"]["product"]["title"]
+            )
+    
+    return {
+        "total_views": metrics["total_views"],
+        "unique_customers": len(metrics["unique_customers"]),
+        "unique_products": len(metrics["products_viewed"])
+    }
+
 @app.route('/')
-def home():
+def index():
     return render_template_string(HTML_TEMPLATE)
 
-# Route to handle JSON text input and analysis
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    json_text = request.form.get('json_entries')
-
-    if not json_text:
-        return jsonify({"error": "No JSON text provided."}), 400
-
     try:
-        data = json.loads(json_text)
-
-        # Analyze only the first 10 entries
-        first_10_entries = data[:10]
-
-        # Convert the subset to string for AI input
-        data_str = json.dumps(first_10_entries, indent=2)
-
-        # Prompt for Gemini AI
-        prompt = f"""
-        The following is JSON data from an e-commerce store describing user behaviors. Analyze the data for user behavior patterns, funnel conversion rates, and potential AI chatbot interventions.
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
         
-        {data_str}
+        # Get basic metrics
+        metrics = process_timestamps(data)
         
-        Provide insights in a concise format:
-        """
-
-        # Query Gemini AI with the correct model
-        try:
-            response = genai.generate_text(model="models/text-bison-001", prompt=prompt)
-            if 'candidates' not in response or not response['candidates']:
-                raise ValueError("No candidates returned in the response.")
-            analysis = response['candidates'][0]['output']
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 500
-        except Exception as e:
-            return jsonify({"error": f"Gemini AI Error: {str(e)}"}), 500
-
-        return jsonify({"analysis": analysis, "message": "Analysis Complete!"})
-
-    except json.JSONDecodeError:
-        return jsonify({"error": "Invalid JSON text. Please provide valid JSON."}), 400
+        # Get AI analysis
+        ai_analysis = analyze_user_behavior(data)
+        
+        return jsonify({
+            "metrics": metrics,
+            "ai_analysis": ai_analysis
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
