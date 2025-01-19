@@ -10,7 +10,13 @@ app = Flask(__name__)
 os.environ['GOOGLE_API_KEY'] = 'AIzaSyDPoaPx17CL68O0xhNBqaubSvBB6f2GUXw'
 
 # Configure Gemini AI with the API key
-genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+try:
+    api_key = os.getenv('GOOGLE_API_KEY')
+    if not api_key:
+        raise ValueError("API key is not set. Please configure the 'GOOGLE_API_KEY' environment variable.")
+    genai.configure(api_key=api_key)
+except Exception as e:
+    raise RuntimeError(f"Failed to configure Gemini AI: {str(e)}")
 
 # HTML Template for File Upload
 HTML_TEMPLATE = """
@@ -99,16 +105,23 @@ def analyze():
         Provide insights in a concise format:
         """
 
-        # Query Gemini AI (Change from OpenAI to Gemini)
-        response = genai.generate_text(prompt=prompt)
-
-        # Extract Gemini AI response
-        analysis = response['text']
+        # Query Gemini AI (Enhanced Error Handling)
+        try:
+            response = genai.generate_text(prompt=prompt)
+            # Validate response
+            if 'text' not in response:
+                return jsonify({"error": "Invalid response format from Gemini AI"}), 500
+            analysis = response['text']
+        except Exception as e:
+            return jsonify({"error": f"Failed to generate text: {str(e)}"}), 500
 
         return jsonify({"analysis": analysis, "message": "Upload Complete!"})
 
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid JSON file. Please upload a valid JSON file."}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 10000)))
+    # Added debug mode for better error visibility
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 10000)), debug=True)
